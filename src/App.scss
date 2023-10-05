@@ -1,0 +1,19 @@
+@import "~bootstrap/scss/bootstrap";
+
+.app {
+  box-sizing: border-box;
+  padding: 50px 100px;
+  font-family: "Roboto Condensed", sans-serif;
+}
+
+@media screen and (max-width: 992px) and (min-width: 576px) {
+  .app {
+    padding: 50px 50px;
+  }
+}
+
+@media screen and (max-width: 576px) {
+  .app {
+    padding: 50px 10px;
+  }
+}
