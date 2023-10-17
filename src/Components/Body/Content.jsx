@@ -1,17 +1,60 @@
-import charPic from '../img/abyss.jpg'
+import React, { useState, useEffect,useLayoutEffect } from 'react'
 import Vision from '../img/vision.png'
 import Container from 'react-bootstrap/Container'
 import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
-import Thor from '../img/thor.jpeg'
 import { Button } from 'react-bootstrap'
 import Form from 'react-bootstrap/Form'
 import InputGroup from 'react-bootstrap/InputGroup'
+import MarvelAPI from '../../Services/MarvelServices'
+import ErrorMessage from '../ErrorMessage/ErrorMessage'
+import Spinner from '../spinner/Spinner'
 
 import './body.scss'
 
 const Content = () => {
-  const arr = [1, 2, 3, 4, 5, 6, 7, 8, 9]
+  const MarvelChars = new MarvelAPI()
+
+  const [characters, setCharacters] = useState([])
+  const [isError, setError] = useState(false)
+  const [isLoading, setLoading] = useState(true)
+  const [selectedCharID, setSelectedCharID] = useState()
+  const [selectedChar, setSelectedChar] = useState({
+    name: null,
+    description: null,
+    thumbnail: null,
+    homePage: null,
+    wiki: null,
+  })
+
+  const updateCharacters = () => {
+    MarvelChars.getAllCharacters()
+      .then((res) => {
+        setCharacters(res)
+        if (res.length > 0) {
+          setSelectedCharID(res[0].id); 
+        }
+      })
+      .catch((err) => {
+        setError(true)
+      })
+      .finally(() => {
+        setLoading(false)
+      })
+  }
+
+  const UpdateChar = () => {
+    if (selectedCharID) {
+      MarvelChars.getOneCharacter(selectedCharID)
+        .then((res) => {
+          setSelectedChar(res)
+        })
+        .catch((err) => {
+          setError(true)
+        })
+    }
+  }
+
   const movies = [
     'All-Winners Squad: Band of Heroes (2011) #3',
     'Alpha Flight (1983) #50',
@@ -25,17 +68,17 @@ const Content = () => {
     'Avengers (1996) #1',
   ]
 
-  const char = arr.map((char, index) => {
+  const char = characters.map((char, index) => {
     return (
-      
-      <Col className="character_item" key={index} md={3}>
-        
-        <img src={charPic} alt="character" />
-
-        <p className="character_name">Aryys</p>
-        
+      <Col
+        className="character_item"
+        key={index}
+        md={3}
+        onClick={() => setSelectedCharID(char.id)}
+      >
+        <img src={char.thumbnail} alt={char.name} />
+        <p className="character_name">{char.name}</p>
       </Col>
-      
     )
   })
 
@@ -47,33 +90,38 @@ const Content = () => {
     )
   })
 
+  useEffect( () => {
+     updateCharacters()
+    // eslint-disable-next-line
+  },[])
+
+  useEffect(() => {
+    
+    UpdateChar()
+    // eslint-disable-next-line
+  }, [selectedCharID])
+
+
+
+  const spinner = isLoading ? <Spinner /> : null
+  const err = isError ? <ErrorMessage /> : null
+  const content = !(spinner || err) ? char : null
+  const selectedContent = !(spinner || err) ? (
+    <SelectedCharacter selected={selectedChar} />
+  ) : null
+
   return (
     <Container className="CharContent">
-      <Row className="character_grid"> {char}</Row>
+      <Row className="character_grid">
+        {spinner}
+        {err}
+        {content}
+      </Row>
       <Row className="character_info">
         <Col>
-          <div className="character_basics">
-            <img src={Thor} alt="thor" className='thor'/>
-
-            <div className="name_buttons">
-              <p>Thor</p>
-              <div className="butss">
-                <Button variant="primary">Primary</Button>{' '}
-                <Button variant="primary">Primary</Button>{' '}
-              </div>
-            </div>
-          </div>
-
-          <p className="char_description">
-            In Norse mythology, Loki is a god or jötunn (or both). Loki is the
-            son of Fárbauti and Laufey, and the brother of Helblindi and
-            Býleistr. By the jötunn Angrboða, Loki is the father of Hel, the
-            wolf Fenrir, and the world serpent Jörmungandr. By Sigyn, Loki is
-            the father of Nari and/or Narfi and with the stallion Svaðilfari as
-            the father, Loki gave birth—in the form of a mare—to the
-            eight-legged horse Sleipnir. In addition, Loki is referred to as the
-            father of Váli in the Prose Edda.
-          </p>
+          {spinner}
+          {err}
+          {selectedContent}
 
           <h4>Comics:</h4>
 
@@ -89,16 +137,49 @@ const Content = () => {
           </div>
         </Col>
       </Row>
-      <Row className='load_more_row'>
+      <Row className="load_more_row">
         <Col>
-        <Button className="load_more"> Load more</Button>
-        <div className="vision-char">
-          <img src={Vision} alt="vision" className="vision" />
-        </div>
+          <Button className="load_more"> Load more</Button>
+          <div className="vision-char">
+            <img src={Vision} alt="vision" className="vision" />
+          </div>
         </Col>
-      </Row>{' '}
+      </Row>
     </Container>
   )
 }
 
+const SelectedCharacter = ({ selected }) => {
+  const { name, thumbnail, description, homePage, wiki } = selected
+  let imgStyle = { objectFit: 'cover' }
+  if (
+    thumbnail ===
+    'http://i.annihil.us/u/prod/marvel/i/mg/b/40/image_not_available.jpg'
+  ) {
+    imgStyle = { objectFit: 'contain' }
+  }
+
+  return (
+    <>
+      <div className="character_basics">
+        <img src={thumbnail} alt={name} style={imgStyle} />
+          {name}
+        <div className="buttons">
+          <a href={homePage} className="button button__main">
+            {' '}
+            <div className="inner">Home Page</div>
+          </a>
+          <a href={wiki} className="button button__secondary">
+            {' '}
+            <div className="inner">Wiki</div>
+          </a>
+        </div>
+      </div>
+
+      <p className="char_description">
+        {description || 'There is no description for this character'}
+      </p>
+    </>
+  )
+}
 export default Content
